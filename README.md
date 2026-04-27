@@ -8,7 +8,7 @@ This project started as a simple music recommender simulation from Module 2 and 
 
 This builds on my **Music Recommender Simulation** from Module 2. The original system scored 20 songs from a CSV catalog against a structured user taste profile using a weighted algorithm. Mood, energy and genre each had fixed point values and the top 5 results were returned with explanations. I also built adversarial user profiles specifically to expose flaws in the scoring logic, like what happens when someone wants high energy music but their mood is set to "chill."
 
-The catalog has since been expanded from 20 to **50 songs** to support semantic retrieval. The additions fill in the mid-energy gap (0.40–0.65) flagged by the bias audit, add previously missing moods (`sad`, `dreamy`, `introspective`), and bring in new genres including `indie rock`, `synth pop`, `r&b`, and `soul`. All 30 new tracks are mainstream songs (e.g. Blinding Lights, Someone Like You, Lose Yourself, Shape of You, Jolene).
+The catalog has since been expanded from 20 to **50 songs** to support semantic retrieval. The additions fill in the mid-energy gap (0.40–0.65) flagged by the bias audit, add previously missing moods (`sad`, `dreamy`, `introspective`), and bring in new genres including `indie rock`, `pop`, `r&b`, and `soul`. All 30 new tracks are mainstream songs (e.g. Blinding Lights, Someone Like You, Lose Yourself, Shape of You, Jolene).
 
 ---
 
