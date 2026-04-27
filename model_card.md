@@ -1,105 +1,117 @@
-# 🎧 Model Card: Music Recommender Simulation
+# Model Card: Music Recommender System
 
-## 1. Model Name  
+## 1. Model Name
 
-Give your model a short, descriptive name.  
-Example: M3(Music Mood Matcher) 
-
----
-
-## 2. Intended Use  
-
-Describe what your recommender is designed to do and who it is for. 
-
-Prompts:  
-
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
-
-
-M3, or Music Mood Matcher, is designed for people who pick music based on how they feel rather than what genre or artist they're in the mood for. Instead of browsing playlists manually, a user inputs their current mood alongside preferences like energy level, tempo and danceability and the system scores every song in the catalog against that profile to return a ranked list of matches. M3 is built for casual listeners who want the right song for the moment without having to think too hard about it.
+M3 (Music Mood Matcher)
 
 ---
 
-## 3. How the Model Works  
+## 2. Intended Use
 
-Every song in the catalog has a set of descriptors covering genre, mood, energy, how positive it sounds, how danceable it is and whether it leans acoustic or electronic. When a user enters their preferences, M3 scores every song in the catalog based on how closely it matches and returns them ranked from best to worst fit.
-Scoring works like a point system with five components. Mood is worth the most at up to 3 points since it's the clearest signal of what a listener actually wants in a given moment. Energy is next at up to 4 points because two songs in the same mood can feel completely different depending on whether one is a slow ballad and the other is an all-out sprint. Genre is a flat 1 point bonus with no partial credit. Valence and danceability each contribute smaller amounts to round out the score. There's also a 1 point penalty if a user dislikes acoustic music and the song is heavily acoustic.
-The only inputs M3 needs are preferred genre, mood, energy, valence, danceability and whether the user likes acoustic sounds. It doesn't factor in listening history, time of day or anything the user has heard before, treating every request as a fresh start.
-One notable change from the original scoring logic was rebalancing the weights: energy was doubled from 2 points to 4 and genre was halved from 2 points to 1. This made M3 more sensitive to whether a song actually feels right rather than just matching the right label.
+M3 is built for people who want music that matches how they feel right now without having to scroll through playlists or know exactly what genre they want. You type something in plain English like "something chill for studying" or "intense gym music" and the system figures out which songs fit best.
 
----
-
-## 4. Data  
-
-Describe the dataset the model uses.  
-
-Prompts:  
-
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
-
-The catalog has 20 songs spanning six genres: pop, lofi, rock, electronic, folk pop and classical. Moods include chill, intense, calm, dark, focused and energetic. I didn't add or remove any songs from the original dataset. The bigger gap is in what's missing: 20 songs is a pretty thin catalog and several taste dimensions that matter to real listeners aren't represented at all. There's no hip hop, R&B, country or jazz, and nothing that captures more nuanced moods like nostalgic, angry or romantic. The acoustic flag is the only thing that distinguishes texture, so two songs that sound completely different can look identical to the scorer if their tags line up.
+It's a classroom project, not a production app. The catalog is small and the scoring logic is simple enough to inspect and explain, which was the point. It was built to understand how recommender systems work from the inside rather than just using one.
 
 ---
 
-## 5. Strengths  
+## 3. How the Model Works
 
-Where does your system seem to work well  
+There are two layers working together now.
 
-Prompts:  
+The first is a retrieval layer built with RAG. When a user types a query, the system converts it into a vector using a sentence-transformers model and compares it against embeddings of every song in the catalog. Songs are described in natural language before being embedded so that queries like "gym music" land near songs tagged as intense and high energy rather than just matching on exact keywords. The top matches come back ranked by cosine similarity.
 
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition
+The second is a scoring layer that applies the original weighted algorithm to the retrieved candidates. Genre match gives 1 point. Mood match gives 3 points because mood is the clearest signal of what someone wants. Energy proximity gives up to 4 points. Valence and danceability contribute smaller amounts. There is also a 1 point penalty if the user dislikes acoustic music and the song is heavily acoustic. Max possible score is 10.5.
 
-M3 works best when a user's preferences all point in the same direction. If someone wants high-energy rock with an intense mood, the system finds the right songs quickly and confidently, with top scores consistently above 9.0 out of 10.5. The scoring also does a good job separating strong matches from weak ones in these clean cases, so the ranked list actually means something. The weight rebalancing helped too: bumping energy up made the results feel more intuitive since a song that matches on vibe but not on energy no longer sneaks to the top just because the genre label lined up. 
+When an Anthropic API key is available, Claude generates a short explanation of why the results match the query. If no key is available the retrieval table still shows up with similarity scores so the system is still usable.
 
 ---
 
-## 6. Limitations and Bias 
+## 4. Data
 
-The biggest problem I found while testing is that mood has way too much influence on the final score. It ends up dominating the results even when everything else the user wants points in a totally different direction. In one test I ran, a user profile that wanted high-energy music but listed "calm/chill" as their preferred mood kept getting quiet, low-energy songs at the top just because the mood bonus was big enough to cancel out a bad energy match. It basically creates a filter bubble where as soon as a mood label lines up, the system stops looking for the best overall song and just locks onto that mood cluster, tempo, energy and genre be damned.
+The catalog started at 20 songs and was expanded to 50 to support the RAG layer better. More songs means more diverse candidates for retrieval to find.
 
-It gets worse when the user's preferred mood doesn't exist in the catalog at all. In that case, their score is quietly capped at 7.5 out of 10.5 and nothing tells them that happened. The system still spits out a confident-looking ranked list, but nearly 29% of the scoring range is just... gone. That feels like a pretty significant flaw since the user has no idea their results are degraded.
+The 30 songs added are all mainstream tracks including Blinding Lights, Someone Like You, Lose Yourself, Shape of You and Jolene. They were picked to fill gaps the original catalog had. The mid-energy range between 0.40 and 0.65 was very thin before. Moods like sad, dreamy and introspective were completely missing. Genres like indie rock, r&b and soul had little to no representation.
 
-An easy fix would be to either dial back the mood weight so that energy and genre can actually compete, or at least throw up a warning when no mood match is found. Right now it's just silently returning worse results and presenting them like they're accurate, which kind of defeats the whole point.
-
----
-
-## 7. Evaluation  
-
-Testing covered eight user profiles across two rounds. The first three, High-Energy Pop, Chill Lofi and Deep Intense Rock, were baseline profiles where genre, mood and energy all pointed in the same direction just to confirm the scoring logic worked when there was no conflict. These worked fine, with matching songs consistently landing at the top with scores above 9.0 out of 10.5.
-The other five were adversarial profiles, each built to expose a specific failure mode. "Chill Mood but Extreme Energy" showed that the mood bonus (3.0 pts) overpowered a terrible energy match every time, pushing quiet lofi songs to the top for a user who wanted high-energy music. "Sad Mood (not in catalog)" revealed that a missing mood label silently drops the max score from 10.5 to 7.5 with no warning. "Acoustic Lover" confirmed that the likes_acoustic: True flag is never actually read by the scorer. "Tempo Obsessed" verified that tempo_bpm, despite appearing in every profile, is never used in scoring. "All-Median Preferences" found that the same two songs, Focus Flow and Spacewalk Thoughts, floated to the top in 5 of 8 results lists whenever no strong categorical match existed.
-The most surprising finding came from rebalancing the weights. Doubling the energy multiplier and halving genre caused Harlequin to score a perfect 10.5 out of 10.5, revealing it was a near-exact match on energy, valence and danceability that the old weights had completely buried.
----
-
-## 8. Future Work  
-
-Ideas for how you would improve the model next.  
-
-Prompts:  
-
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
-
-I think the catalog needs to grow. Twenty songs isn't enough to return meaningfully different results across different user profiles and several genres and moods that real listeners care about are completely absent. Adding more songs would also reduce the "floating duplicates" problem where the same two songs keep showing up at the top across unrelated profiles just because nothing else scores high enough to displace them. Longer term it would be worth exploring whether listening history could be incorporated so M3 stops treating every request as a fresh start. Even a simple "don't recommend songs the user has already heard" filter would make it feel a lot more like a real recommender.
+The catalog still reflects a pretty specific slice of popular Western music from the last few decades. It skews toward English-language pop and rock. Someone with very different taste, like classical only or non-Western genres, would get poor results since there is almost nothing in the catalog that matches them.
 
 ---
 
-## 9. Personal Reflection  
+## 5. Strengths
 
-A few sentences about your experience.  
+M3 works best when the user's query has a clear emotional direction. A query like "intense workout music" or "sad acoustic songs" reliably returns the right kind of songs because the RAG embedding puts those queries near the right part of the catalog. The eval harness confirmed this across 8 test cases covering different moods and genres.
 
-Prompts:  
+The scoring layer gives every result an explainable reason. You can look at any song in the output and see exactly which components contributed to its score. That transparency is something pure embedding-based recommenders don't give you.
 
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+---
 
-Building M3 was more interesting than I expected mostly because the bugs weren't really bugs, they were design decisions that turned out to have weird consequences. The mood weight issue wasn't a mistake in the code, it was a deliberate choice that just happened to completely override everything else once you tested it against conflicting signals. The most useful part of the process was building adversarial profiles specifically to break the system, since that's what actually surfaced the problems rather than just confirming it worked on easy cases. This project made me realize how much effort goes into music recommendation apps, and I'm so glad I was able to edit and finalize one for myself. I'm super happy with this project, 
+## 6. Limitations and Bias
+
+Mood weight still dominates the scoring. Mood is worth 3 out of 10.5 points which sounds reasonable until you realize that a mood mismatch on everything else combined still can't cancel out a mood match. A user who wants high energy music but lists "chill" as their mood will keep getting quiet lofi songs at the top. The mood bonus just pulls too hard.
+
+Genre matching is still exact string comparison. A user who likes "pop" gets no credit for "indie pop" or "dream pop" even though those are closely related. The scorer treats them as completely different categories.
+
+The acoustic preference flag only punishes. If you dislike acoustic music and a song is heavily acoustic, you lose a point. But if you love acoustic music, nothing happens. Acoustic fans are invisible to the scorer.
+
+The catalog is still small relative to what a real recommender works with. With 50 songs, one strong genre or mood cluster can dominate the entire ranked list. Some genres still only have one or two songs so users with niche taste run out of options fast.
+
+The catalog also reflects a narrow slice of musical taste. Almost everything in it is English-language Western pop from the last 20 years or so. Someone who listens to Afrobeats, K-pop, classical or non-Western music would get poor results not because the algorithm is broken but because the data just doesn't represent them at all. That's a real bias and it would take a much more intentional data collection process to fix.
+
+---
+
+## 6b. Misuse Risks
+
+A music recommender seems pretty harmless on the surface but there are a few ways it could go wrong.
+
+The biggest one is if the mood input was used to make inferences about someone's mental state. Right now M3 just uses mood as a filter for what kind of music to return. But if someone always queries for sad or low-energy music, a more sophisticated version of this system could start flagging or profiling them based on those patterns. That's not something M3 does but it's easy to see how a production system could go in that direction, and that would be a pretty serious privacy concern.
+
+Another risk is catalog bias being mistaken for taste. If the catalog only has certain genres and a user gets recommendations from only those genres, they might assume those are their only options rather than realizing the system just doesn't know about other music. It's a small version of the filter bubble problem that real platforms deal with at scale.
+
+To reduce misuse, M3 doesn't store queries or user profiles between sessions. Each request is treated independently with no memory of what came before. Logging or storing that data would be the main thing to avoid if this ever moved beyond a classroom project.
+
+---
+
+## 7. Evaluation
+
+Testing happened in two phases.
+
+The first phase used the original adversarial profiles from the base project. Eight profiles were tested including baselines like High-Energy Pop and Chill Lofi and adversarial ones designed to expose specific flaws. The mood dominance flaw, the missing mood ceiling drop and the unscored tempo field all showed up exactly as expected.
+
+The second phase used the eval harness built for the RAG system. It runs 8 predefined natural language queries through the retrieval pipeline and checks whether the top 3 results contain the expected genres and moods. Each test gets a pass or fail and a confidence score from the cosine similarity of the top result. The harness prints a summary table at the end showing which tests passed and what the average confidence was. This made it easy to see whether changes to the song descriptions improved retrieval without having to manually inspect every result.
+
+---
+
+## 8. Future Work
+
+The catalog still needs to grow. Even at 50 songs some genres and moods only have one or two entries, which means a user with niche taste just runs out of real options. Adding more songs would also reduce the situation where the same songs keep floating to the top across unrelated queries because nothing else scores high enough to beat them.
+
+The mood weight should probably be tuned or replaced. Right now it's a hard 3 point flat bonus which is too blunt. A sliding scale based on how many mood-matching songs exist in the catalog would make more sense.
+
+Getting the API key working would also unlock the full experience. Right now the Claude explanation is silently skipped when there are no credits, which means the output is just a table with numbers. That works for demonstrating retrieval quality but the original vision was for the AI to actually explain the results in natural language.
+
+---
+
+## 9. What Surprised Me About Reliability Testing
+
+The eval harness was more useful than I expected. I thought I'd run it once to confirm everything worked and that would be it, but it actually caught something real. After the first version of the RAG layer was built, the harness showed that several queries were returning the wrong genres in the top 3 results even when the right songs were clearly in the catalog. That pointed directly to the song description format being the problem, not the embedding model. Without the harness I probably would have assumed retrieval was fine and spent a lot of time looking in the wrong place.
+
+The other surprise was how confident the output looks even when the system is clearly struggling. The eval harness showed that a query like "aggressive rap" still returned results with cosine similarity scores around 0.55 even though the top result was wrong. Those scores don't look low enough to raise a red flag but the recommendations were off. That means confidence scores alone aren't a reliable quality signal on a small catalog.
+
+---
+
+## 10. Personal Reflection
+
+The RAG layer was the part that took the most debugging. The first version just formatted songs as "Genre: lofi. Mood: chill. Energy: 0.35" and the results were bad because that kind of text doesn't match how people describe music. Rewriting the descriptions to include phrases like "good for studying" and "great for the gym" made a noticeable difference in retrieval quality.
+
+Getting the API working was also harder than expected. I got a key but had no credits on the account so the explanation step kept throwing a 400 error. The fix was just wrapping the API call in a try-except so the app doesn't crash when the credits run out. It was a small code change but it took a while to figure out what was actually going wrong since the error message was buried in a long traceback.
+
+The most interesting thing I learned is that embedding similarity and human musical similarity are not the same thing. The model might think two songs are close because their descriptions share vocabulary but a human listener would hear them as completely different. That gap is hard to close without either a much better catalog or actual audio features rather than text tags.
+
+---
+
+## 11. Collaboration With AI
+
+I used Claude throughout this project mostly for writing code I didn't know how to structure from scratch, like the RAG retrieval layer and the eval harness.
+
+One genuinely helpful suggestion was when I had the retrieval returning bad results and Claude explained why: the song descriptions were too terse and structured so the embedding model had no way to connect "gym music" to a song tagged only as "rock, intense, energy 0.91." The fix was rewriting the descriptions to include natural language phrases about use cases. That was a real insight I wouldn't have arrived at quickly on my own and it actually fixed the problem.
+
+One suggestion that was wrong was the original song_to_text format itself. Claude wrote it as a short structured string with the genre and mood listed as labels, which seemed fine at first. But when I actually ran queries the results were clearly off and that format turned out to be the root cause. So the same tool that created the problem also diagnosed and fixed it, which was a weird loop to be in. It was a good reminder that AI generated code can look correct and still have a non-obvious design flaw that only shows up when you test it against real inputs.

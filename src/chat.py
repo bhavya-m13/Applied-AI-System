@@ -78,8 +78,11 @@ def main() -> None:
         print()
         _print_results(results)
         print()
-        explanation = _explain(client, query, results)
-        print(f"  {explanation}\n")
+        try:
+            explanation = _explain(client, query, results)
+            print(f"  {explanation}\n")
+        except Exception:
+            print("  (AI explanation unavailable — showing retrieval results only)\n")
 
 
 if __name__ == "__main__":

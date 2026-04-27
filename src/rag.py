@@ -22,14 +22,69 @@ def _get_model() -> SentenceTransformer:
 
 
 def song_to_text(song: Dict) -> str:
-    """Render a song dict as a natural-language sentence for embedding."""
+    """
+    Render a song as a rich natural-language description so that
+    conversational queries ("gym music", "sad rainy day") embed close
+    to the right songs.
+    """
+    energy    = float(song["energy"])
+    valence   = float(song["valence"])
+    dance     = float(song["danceability"])
+    acoustic  = float(song["acousticness"])
+    genre     = song["genre"]
+    mood      = song["mood"]
+
+    # Energy feel
+    if energy > 0.85:
+        energy_desc = "very high energy, intense and powerful"
+    elif energy > 0.70:
+        energy_desc = "high energy and upbeat"
+    elif energy > 0.50:
+        energy_desc = "moderately energetic"
+    elif energy > 0.35:
+        energy_desc = "calm and relaxed"
+    else:
+        energy_desc = "very calm, quiet and peaceful"
+
+    # Emotional tone
+    if valence > 0.80:
+        valence_desc = "very happy, joyful and feel-good"
+    elif valence > 0.60:
+        valence_desc = "positive and uplifting"
+    elif valence > 0.40:
+        valence_desc = "neutral emotional tone"
+    elif valence > 0.25:
+        valence_desc = "dark or melancholic"
+    else:
+        valence_desc = "very sad, heavy and emotional"
+
+    # Texture
+    texture = "acoustic and organic" if acoustic > 0.70 else "produced or electronic sound"
+
+    # Use-case hints bridge the gap between tags and how people talk
+    hints: list[str] = []
+    if genre in ("lofi", "ambient") or mood in ("chill", "focused", "calm", "relaxed"):
+        hints.append("good for studying, focusing or late-night background listening")
+    if energy > 0.80 and mood in ("intense", "energetic", "angry", "euphoric", "dark"):
+        hints.append("great for the gym, workouts or high-intensity activity")
+    if mood in ("romantic", "nostalgic", "moody"):
+        hints.append("suits a date night, slow dance or reflective evening")
+    if mood in ("sad", "melancholic"):
+        hints.append("fits sad, rainy-day or heartbreak moments")
+    if genre == "jazz" or mood == "relaxed":
+        hints.append("coffee shop or cafe atmosphere")
+    if dance > 0.80 and energy > 0.70:
+        hints.append("great for dancing or parties")
+    if mood in ("happy", "playful", "euphoric") and energy > 0.70:
+        hints.append("fun, celebratory and feel-good")
+
+    hint_str = ". ".join(hints) + "." if hints else ""
+
     return (
-        f"{song['title']} by {song['artist']}. "
-        f"Genre: {song['genre']}. Mood: {song['mood']}. "
-        f"Energy: {float(song['energy']):.2f}, "
-        f"valence: {float(song['valence']):.2f}, "
-        f"danceability: {float(song['danceability']):.2f}."
-    )
+        f"{song['title']} by {song['artist']} is a {genre} song with a {mood} mood. "
+        f"It is {energy_desc} with a {valence_desc} feel and {texture}. "
+        f"{hint_str}"
+    ).strip()
 
 
 def embed_catalog(songs: List[Dict]) -> np.ndarray:
