@@ -19,3 +19,33 @@ id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
 18,Birds of a Feather,Billie Eilish,dream pop,nostalgic,0.52,105,0.58,0.62,0.55
 19,MILLION DOLLAR BABY,Tommy Richman,soul,euphoric,0.89,130,0.91,0.90,0.17
 20,Stargazing,Myles Smith,folk pop,calm,0.38,82,0.66,0.47,0.78
+21,Blinding Lights,The Weeknd,synthwave,intense,0.88,171,0.44,0.51,0.00
+22,Flowers,Miley Cyrus,pop,happy,0.73,120,0.82,0.72,0.18
+23,Anti-Hero,Taylor Swift,pop,introspective,0.61,97,0.53,0.64,0.12
+24,Levitating,Dua Lipa,pop,euphoric,0.83,103,0.91,0.74,0.01
+25,Golden Hour,JVKE,pop,romantic,0.55,97,0.88,0.67,0.28
+26,Peaches,Justin Bieber ft. Daniel Caesar,r&b,chill,0.53,90,0.72,0.67,0.11
+27,As It Was,Harry Styles,pop,melancholic,0.73,124,0.66,0.64,0.07
+28,Heat Waves,Glass Animals,indie rock,dreamy,0.65,82,0.52,0.65,0.08
+29,Running Up That Hill,Kate Bush,synth pop,intense,0.68,118,0.33,0.55,0.01
+30,Watermelon Sugar,Harry Styles,pop,happy,0.82,95,0.86,0.55,0.15
+31,Cruel Summer,Taylor Swift,pop,intense,0.70,170,0.64,0.55,0.06
+32,Shape of You,Ed Sheeran,pop,happy,0.82,96,0.93,0.83,0.08
+33,Stay With Me,Sam Smith,soul,romantic,0.38,84,0.28,0.46,0.48
+34,Someone Like You,Adele,pop,sad,0.31,67,0.22,0.37,0.89
+35,Thunderstruck,AC/DC,rock,intense,0.92,135,0.46,0.62,0.03
+36,Lose Yourself,Eminem,hip-hop,intense,0.92,171,0.37,0.83,0.03
+37,Redbone,Childish Gambino,r&b,moody,0.62,96,0.62,0.67,0.03
+38,Sunflower,Post Malone & Swae Lee,hip-hop,happy,0.48,90,0.82,0.76,0.39
+39,sweater weather,The Neighbourhood,indie rock,melancholic,0.60,136,0.38,0.61,0.05
+40,Mr. Brightside,The Killers,rock,intense,0.93,148,0.48,0.72,0.04
+41,Circles,Post Malone,pop,sad,0.40,120,0.47,0.70,0.19
+42,Slow Dancing in a Burning Room,John Mayer,r&b,romantic,0.41,77,0.27,0.44,0.35
+43,Electric Feel,MGMT,indie rock,euphoric,0.69,107,0.80,0.77,0.01
+44,Counting Stars,OneRepublic,pop,energetic,0.80,123,0.53,0.66,0.12
+45,Clocks,Coldplay,rock,intense,0.72,130,0.30,0.56,0.05
+46,HUMBLE.,Kendrick Lamar,hip-hop,dark,0.90,150,0.41,0.90,0.00
+47,I Wanna Dance with Somebody,Whitney Houston,pop,happy,0.85,119,0.93,0.79,0.05
+48,September,Earth Wind & Fire,soul,happy,0.88,126,0.96,0.79,0.04
+49,Africa,Toto,rock,nostalgic,0.56,93,0.68,0.61,0.10
+50,Jolene,Dolly Parton,country,sad,0.33,108,0.31,0.50,0.79

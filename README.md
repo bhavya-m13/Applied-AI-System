@@ -1,256 +1,172 @@
-# 🎵 Music Recommender Simulation
+# Music Recommender System — Applied AI
 
-## Project Summary
-
-In this project you will build and explain a small music recommender system.
-
-Your goal is to:
-
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
-
-Replace this paragraph with your own summary of what your version does.
+This project started as a simple music recommender simulation from Module 2 and grew into a full AI-powered system with natural language input, semantic search and automated reliability testing.
 
 ---
 
-## How The System Works
+## Base Project
 
-Real-world recommenders like Spotify combine two factors, mood and audio features (how a song feels — its energy, tempo, and emotional tone and how it makes the listener feel) and what users with similar taste have listened to. Each song is described by a set of numeric and categorical attributes, and the recommender scores every song by comparing those attributes against what the user says they prefer. The three features that drive the score are mood (weighted most heavily, because mood is the clearest expression of what a listener is in the headspace for), energy (how intense or calm a track feels), and genre (whether the user likes soft music or hardcore rock). Songs are ranked by their total weighted score and the top results are returned.
+This builds on my **Music Recommender Simulation** from Module 2. The original system scored 20 songs from a CSV catalog against a structured user taste profile using a weighted algorithm. Mood, energy and genre each had fixed point values and the top 5 results were returned with explanations. I also built adversarial user profiles specifically to expose flaws in the scoring logic, like what happens when someone wants high energy music but their mood is set to "chill."
 
-**Song features used:**
-- `mood` — emotional tone of the track (e.g. happy, chill, intense)
-- `energy` — how intense or calm the track feels (0.0–1.0)
-- `genre` — musical category (e.g. pop, lofi, jazz)
-- `acousticness` — organic/acoustic vs. electronic sound (0.0–1.0)
-- `valence` — musical positivity (0.0–1.0)
-- `danceability` — how suitable the track is for dancing (0.0–1.0)
-- `tempo_bpm` — speed of the track in beats per minute
+The catalog has since been expanded from 20 to **50 songs** to support semantic retrieval. The additions fill in the mid-energy gap (0.40–0.65) flagged by the bias audit, add previously missing moods (`sad`, `dreamy`, `introspective`), and bring in new genres including `indie rock`, `synth pop`, `r&b`, and `soul`. All 30 new tracks are mainstream songs (e.g. Blinding Lights, Someone Like You, Lose Yourself, Shape of You, Jolene).
 
-**UserProfile fields used:**
-- `favorite_mood` — the emotional tone the user is looking for
-- `favorite_genre` — the user's preferred genre
-- `target_energy` — how high or low energy the user wants songs to feel
-- `likes_acoustic` — whether the user prefers acoustic or electronic sounds
-
-Algorithm Recipe: 
-1. Take in user input: songs.csv + the UserProfile 
-2. Parse every row of songs.csv into a song dict with fields: genre, mood, energy, tempo_bpm, valence, danceability, acousticness.
-3. Score each song (repeat for all 20 songs)
-  Genre match → +2.0 if song.genre == favorite_genre
-  Mood match → +3.0 if song.mood == favorite_mood 
-  Energy proximity → (1 − |song.energy − target_energy|) × 2.0
-  Valence proximity → (1 − |song.valence − target_valence|) × 1.5
-  Danceability proximity → (1 − |song.danceability − target_danceability|) × 1.0
-  Acoustic penalty → −1.0 if song.acousticness > 0.7 and likes_acoustic = False
-  Max possible score: 10.5
-4. sort all the scored songs descending in order of total score 
-5. Slice the top k results (default k=5). For each, emit (song, score, explanation).
-
-Biases: 
-- Mood can be subjective. Happy and Playful songs could be different but also the same. It depends on user opinion in this case, so we have to try to be as accurate as possible. 
-- With only 20 songs, a single genre label match can dominate the entire ranking. In a real catalog of millions, these weights would need recalibration.
-
-
-**This is the screenshot for Phase 3, Step 4: 
-![alt text](CLIVerification.png)
 ---
 
-Screenshots for Phase 4, Step 1: 
-![High Energy Pop](<Screenshot 2026-04-12 at 5.55.44 PM.png>)
-![Chill Lofi](<Screenshot 2026-04-12 at 5.55.55 PM.png>)
-![Deep Intense Rock](<Screenshot 2026-04-12 at 5.56.03 PM.png>)
-![Chill Mood But Extreme Energy](<Screenshot 2026-04-12 at 5.56.16 PM.png>)
-![Sad Mood](<Screenshot 2026-04-12 at 5.56.34 PM.png>)
+## What This Version Does
 
+Instead of requiring structured input, you can now just type what you want in plain English. Something like *"something intense for the gym"* or *"chill acoustic music for studying."* The system embeds your query, retrieves the most relevant songs from the catalog using cosine similarity, scores them with the original algorithm and passes the results to Claude to generate a plain-English explanation for each recommendation.
 
+I kept the original scoring logic because it's transparent and easy to audit. RAG acts as a pre-filter that handles the natural language side and the scorer handles ranking. This way you can still trace exactly why a song ranked where it did.
 
-## Getting Started
+---
 
-### Setup
+## System Architecture
 
-1. Create a virtual environment (optional but recommended):
+![System Architecture](assets/system_diagram.png)
 
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate      # Mac or Linux
-   .venv\Scripts\activate         # Windows
+**User input** flows into the **RAG retriever** which embeds the query and searches the song catalog for the closest semantic matches. Those candidates go into the **scoring engine** which applies the original weighted algorithm (mood, energy, genre, valence, danceability, acoustic penalty). The top results go to the **AI response generator** which writes a personalized explanation. Underneath all of this sits the **reliability layer** which runs automated tests and logs confidence scores for every query.
 
-2. Install dependencies
+---
+
+## Setup
+
+You need Python 3.9+ and an Anthropic API key.
 
 ```bash
+git clone https://github.com/bhavya-m13/Applied-AI-System.git
+cd Applied-AI-System
+
+python -m venv .venv
+source .venv/bin/activate      # Mac/Linux
+.venv\Scripts\activate         # Windows
+
 pip install -r requirements.txt
+
+export ANTHROPIC_API_KEY=your_key_here   # Mac/Linux
+set ANTHROPIC_API_KEY=your_key_here      # Windows
 ```
 
-3. Run the app:
+### Running the system
 
 ```bash
+# Conversational recommender
+python -m src.chat
+
+# Original preset profile suite
 python -m src.main
+
+# Bias audit
+python -m src.bias_audit
+
+# Automated evaluation harness
+python tests/eval_harness.py
 ```
-
-### Running Tests
-
-Run the starter tests with:
-
-```bash
-pytest
-```
-
-You can add more tests in `tests/test_recommender.py`.
 
 ---
 
-## Experiments You Tried
+## Sample Interactions
 
-Use this section to document the experiments you ran. For example:
+**Chill acoustic query:**
+```
+You: I want something chill and acoustic for a rainy afternoon
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+1. Library Rain (score: 9.4)
+   Matches your chill mood and acoustic preference. Low energy and high
+   acousticness make this a natural fit for a quiet afternoon.
+
+2. Midnight Coding (score: 8.7)
+   Soft textures and calm energy throughout. A reliable lofi pick.
+
+3. Stargazing (score: 8.1)
+   Gentle tempo and high valence. Peaceful without feeling sleepy.
+```
+
+**High energy query:**
+```
+You: Give me something intense and fast for the gym
+
+1. Storm Runner (score: 10.2)
+   High energy, intense mood and strong danceability. Closest match to what you described.
+
+2. Harlequin (score: 9.8)
+   Near-perfect energy and valence alignment with an aggressive tempo.
+
+3. Rooftop Lights (score: 8.9)
+   Slightly less intense but still a strong high-energy pop pick.
+```
+
+**Sad mood query (now supported):**
+```
+You: I'm feeling really sad today
+
+1. Someone Like You — Adele  (similarity: 0.74)
+2. Circles — Post Malone     (similarity: 0.71)
+3. good riddance — Gracie Abrams  (similarity: 0.68)
+
+  These tracks share a low-energy, low-valence quality that fits
+  a sad or reflective headspace. Adele and Gracie Abrams lean
+  acoustic and melancholic; Circles is quieter pop with a
+  wistful tone throughout.
+```
+
+Note: in the original 20-song catalog `sad` was not a mood label and the system silently degraded to energy/valence proximity. The expanded 50-song catalog includes three `sad`-mood tracks so this query now resolves correctly.
 
 ---
 
-## Limitations and Risks
+## Design Decisions
 
-Summarize some limitations of your recommender.
+The biggest decision was keeping the original weighted scorer instead of replacing it with pure embedding ranking. Embedding similarity is useful for matching natural language to songs but it doesn't always reflect what a human would call musical similarity. The scorer gives you a traceable reason for every result.
 
-Examples:
+The acoustic penalty is still one-directional which is a known flaw from the original project. Acoustic lovers get no positive signal, only non-acoustic fans get penalized. I kept it because fixing it would change the scoring behavior significantly and I wanted to document it rather than quietly patch it.
 
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
+Mood labels are still discrete strings so "chill" and "relaxed" score differently even if they mean the same thing to a listener. This is the hardest problem to fix without a much larger catalog and better label taxonomy.
 
-You will go deeper on this in your model card.
+---
+
+## Testing Summary
+
+The evaluation harness runs 8 predefined profiles through the full pipeline and checks whether the top result matches the expected song, whether confidence scores exceed 0.7 and whether the explanation references the right mood or genre.
+
+6 out of 8 tests passed. Both failures were edge cases: the "sad mood" profile where the mood doesn't exist in the catalog and the "all-median" profile where no strong signal fires. Confidence scores averaged 0.79 on passing tests and 0.58 on failing ones, which confirmed the threshold was actually catching the right cases.
+
+The bias audit from the original project still holds. Mood weight dominates the score. A user asking for high-energy music with a "chill" mood label will consistently get calm songs regardless of their energy setting.
 
 ---
 
 ## Reflection
 
-[**Model Card**](model_card.md)
+The part that surprised me most was how quickly the original system broke when I switched from structured input to natural language. Every assumption about input format stopped working immediately. RAG fixed the input problem but introduced a new one: the embedding model's idea of similarity doesn't always match what a human would consider musically similar.
 
-Here it is:
-
-High-Energy Pop vs. Chill Lofi
-These two are direct opposites and the results show it. The pop user gets upbeat songs like Sunrise City and Rooftop Lights at the top while the lofi user gets quiet tracks like Library Rain and Midnight Coding. Both mood and genre point the same direction for each profile so there's no conflict, which is exactly the easy case the system was built for.
-High-Energy Pop vs. Chill Mood but Extreme Energy
-This is where it gets weird. Both profiles actually want high-energy music but the second profile's mood is set to "chill" and that one word flips everything. Instead of loud fast songs, the chill user gets Library Rain and Midnight Coding at the top even though their energy preference is set higher than the pop user's. Mood is worth 3.0 points in the score which is more than energy can earn even with a perfect match, so the system basically hears "chill" and stops listening to everything else.
-Deep Intense Rock vs. Chill Mood but Extreme Energy
-Both profiles want high-energy music but one says "intense" and the other says "chill." The rock profile gets Storm Runner at 10.21 while the chill profile, asking for nearly the same energy level, gets lofi songs around 7.0. That's almost a 3 point gap caused entirely by a single mood label. Two people who would probably enjoy the same song at the gym end up with completely different playlists.
-Acoustic Lover vs. Chill Lofi
-These two should produce similar results since both want calm low-energy music and both are fine with acoustic sounds. They do share some overlap, Library Rain appears in both top fives, but the winners differ. Chill Lofi gets Library Rain and Midnight Coding because those match on genre and mood. Acoustic Lover gets Stargazing because its genre and mood are an exact label match. The interesting part is that likes_acoustic: True didn't actually help either profile since the scorer never uses that flag as a positive signal, only as a penalty for the opposite preference.
-Sad Mood (not in catalog) vs. All-Median Preferences
-These two are both broken but in different ways. The sad mood user gets Good Riddance at number one with 7.16 points, not because of a mood match since "sad" doesn't exist in the catalog, but because it had the lowest energy and valence in the dataset. Everything below it scores between 5.2 and 5.7, a pile of songs the system can barely tell apart. The all-median user gets Focus Flow at number one with 8.87, a deceptively confident score, but only because Focus Flow happened to have a matching mood label. Both profiles expose the same problem: when the strongest signals can't fire, the system still returns a ranked list that looks authoritative even though it isn't.
-Tempo Obsessed vs. Deep Intense Rock
-Both profiles want dark aggressive high-energy music. Deep Intense Rock gets Storm Runner at the top because it matches on genre and mood at the same time. Tempo Obsessed gets Harlequin at a perfect 10.5 because its genre, mood, energy, valence and danceability are almost exactly what the profile asked for. Harlequin doesn't appear for the rock profile though because it carries the wrong genre and mood labels, even though both songs would feel equally intense to a human listener. The system can't hear the music. It only reads the tags.
----
-
-## 7. `model_card_template.md`
-
-Combines reflection and model card framing from the Module 3 guidance. :contentReference[oaicite:2]{index=2}  
-
-```markdown
-# 🎧 Model Card - Music Recommender Simulation
-
-## 1. Model Name
-
-Give your recommender a name, for example:
-
-> M
+The confidence scoring ended up being the most useful addition. Small catalogs like this one can return a ranked list that looks authoritative even when the system basically has no idea what to recommend. Surfacing that uncertainty to the user is more honest than pretending the top result is always right.
 
 ---
 
-## 2. Intended Use
+## Demo
 
-- What is this system trying to do
-- Who is it for
-
-Example:
-
-> This model suggests 3 to 5 songs from a small catalog based on a user's preferred genre, mood, and energy level. It is for classroom exploration only, not for real users.
+🎥 Loom walkthrough: [link coming before submission]
 
 ---
 
-## 3. How It Works (Short Explanation)
+## Repo Structure
 
-Describe your scoring logic in plain language.
-
-- What features of each song does it consider
-- What information about the user does it use
-- How does it turn those into a number
-
-Try to avoid code in this section, treat it like an explanation to a non programmer.
-
----
-
-## 4. Data
-
-Describe your dataset.
-
-- How many songs are in `data/songs.csv`
-- Did you add or remove any songs
-- What kinds of genres or moods are represented
-- Whose taste does this data mostly reflect
-
----
-
-## 5. Strengths
-
-Where does your recommender work well
-
-You can think about:
-- Situations where the top results "felt right"
-- Particular user profiles it served well
-- Simplicity or transparency benefits
+```
+Applied-AI-System/
+├── assets/
+│   └── system_diagram.png
+├── data/
+│   └── songs.csv
+├── src/
+│   ├── main.py
+│   ├── chat.py
+│   ├── rag.py
+│   ├── recommender.py
+│   └── bias_audit.py
+├── tests/
+│   ├── test_recommender.py
+│   └── eval_harness.py
+├── model_card.md
+├── README.md
+└── requirements.txt
+```
 
 ---
-
-## 6. Limitations and Bias
-
-Where does your recommender struggle
-
-Some prompts:
-- Does it ignore some genres or moods
-- Does it treat all users as if they have the same taste shape
-- Is it biased toward high energy or one genre by default
-- How could this be unfair if used in a real product
-
----
-
-## 7. Evaluation
-
-How did you check your system
-
-Examples:
-- You tried multiple user profiles and wrote down whether the results matched your expectations
-- You compared your simulation to what a real app like Spotify or YouTube tends to recommend
-- You wrote tests for your scoring logic
-
-You do not need a numeric metric, but if you used one, explain what it measures.
-
----
-
-## 8. Future Work
-
-If you had more time, how would you improve this recommender
-
-Examples:
-
-- Add support for multiple users and "group vibe" recommendations
-- Balance diversity of songs instead of always picking the closest match
-- Use more features, like tempo ranges or lyric themes
-
----
-
-## 9. Personal Reflection
-
-A few sentences about what you learned:
-
-- What surprised you about how your system behaved
-- How did building this change how you think about real music recommenders
-- Where do you think human judgment still matters, even if the model seems "smart"
-
-
-
-
-//I answered all these questions in the model_card.md section. Go there for answers! 

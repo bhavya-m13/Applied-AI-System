@@ -1,4 +1,7 @@
+anthropic
+numpy
 pandas
 pytest
+sentence-transformers
 streamlit
 tabulate
