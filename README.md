@@ -143,7 +143,7 @@ The confidence scoring ended up being the most useful addition. Small catalogs l
 
 ## Demo
 
-🎥 Loom walkthrough: [link coming before submission]
+🎥 Loom walkthrough: [Watch demo](https://www.loom.com/share/6ff03dd7f00f4bf396bac35bcb6ed9d9)
 
 ---
 
